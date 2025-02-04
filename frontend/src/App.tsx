@@ -6,6 +6,17 @@ import "./App.css";
 function App() {
 	const [count, setCount] = useState(0);
 
+  helloWorld();
+
+	function helloWorld() {
+		fetch("http://localhost:8080/hello?name=World", {
+			method: "GET",
+			credentials: "include"
+		})
+			.then((response) => response.text())
+			.then((data) => console.log(data))
+			.catch((error) => console.error("Error:", error));
+	}
 
 	return (
 		<>
