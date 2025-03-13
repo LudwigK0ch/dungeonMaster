@@ -164,129 +164,127 @@ const EncounterTable = () => {
 	};
 
 	return (
-		<>
-			<div className="container py-3">
-				{/* Controls Section */}
-				<div className="row mb-3">
-					<div className="col-md-6 d-flex gap-3">
-						<div className="form-check">
-							<input className="form-check-input" type="checkbox" id="rollInitiative" onChange={() => setRollInitiative(!rollInitiative)} />
-							<label className="form-check-label" htmlFor="rollInitiative">
-								Roll initiative
-							</label>
-						</div>
-						<div className="form-check">
-							<input className="form-check-input" type="checkbox" id="rollHP" onChange={() => setRollHP(!rollHP)} />
-							<label className="form-check-label" htmlFor="rollHP">
-								Roll HP
-							</label>
-						</div>
-					</div>
-					<div className="col-md-6 d-flex justify-content-end gap-2">
-						<button className="btn btn-outline-secondary" onClick={saveEncounter}>
-							Save encounter
-						</button>
-						<label htmlFor="formFile" className="btn btn-outline-secondary">
-							Load encounter
+		<div className="container py-3">
+			{/* Controls Section */}
+			<div className="row mb-3">
+				<div className="col-md-6 d-flex gap-3">
+					<div className="form-check">
+						<input className="form-check-input" type="checkbox" id="rollInitiative" onChange={() => setRollInitiative(!rollInitiative)} />
+						<label className="form-check-label" htmlFor="rollInitiative">
+							Roll initiative
 						</label>
-						<input className="d-none" type="file" id="formFile" onChange={loadEncounter} />
+					</div>
+					<div className="form-check">
+						<input className="form-check-input" type="checkbox" id="rollHP" onChange={() => setRollHP(!rollHP)} />
+						<label className="form-check-label" htmlFor="rollHP">
+							Roll HP
+						</label>
 					</div>
 				</div>
-
-				{/* Add Combatants Section */}
-				<div className="row mb-3">
-					<div className="col-md-6">
-						<div className="input-group input-group-sm">
-							<input
-								type="text"
-								className="form-control"
-								placeholder="Add enemy"
-								list="monster-suggestions"
-								value={userInput}
-								onChange={(e) => setUserInput(e.target.value)}
-							/>
-							<datalist id="monster-suggestions">
-								{filteredMonsters.map((monster, index) => (
-									<option key={index} value={monster.name} />
-								))}
-							</datalist>
-							<button className="btn btn-outline-secondary" onClick={() => addMonster(userInput)}>
-								Add
-							</button>
-						</div>
-					</div>
-					<div className="col-md-6 d-flex justify-content-end gap-2">
-						<button className="btn btn-outline-secondary" onClick={() => addEmptyRow(false)}>
-							Add player
-						</button>
-						<button className="btn btn-outline-secondary" onClick={() => addEmptyRow(rollInitiative)}>
-							Add custom enemy
-						</button>
-					</div>
-				</div>
-
-				{/* Combatants Table */}
-				<div className="table-responsive">
-					<table className="table table-striped table-bordered">
-						<thead>
-							<tr>
-								<th>Initiative</th>
-								<th>Name</th>
-								<th>HP</th>
-								<th>AC</th>
-								<th>Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{combatants.length > 0 ? (
-								combatants.map((c, index) => (
-									<tr key={c.id} className={index === currentCombatantIndex ? "table-danger" : ""}>
-										<td>
-											<input type="text" className="form-control" value={c.initiative} onChange={(e) => updateInitiative(c.id, e.target.value)} />
-										</td>
-										<td>
-											<input type="text" className="form-control" value={c.name} onChange={(e) => updateName(c.id, e.target.value)} />
-										</td>
-										<td>
-											<input type="text" className="form-control" value={c.hp} onChange={(e) => updateHP(c.id, e.target.value)} />
-										</td>
-										<td>
-											<input type="text" className="form-control" value={c.ac} onChange={(e) => updateAC(c.id, e.target.value)} />
-										</td>
-										<td>
-											<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.id)}>
-												Kill
-											</button>
-										</td>
-									</tr>
-								))
-							) : (
-								<tr>
-									<td colSpan="5" className="text-center">
-										No combatants added
-									</td>
-								</tr>
-							)}
-						</tbody>
-					</table>
-				</div>
-
-				{/* Encounter Controls */}
-				<div className="bg-white py-2 border-top shadow-lg position-sticky bottom-0 w-100">
-					<div className="container d-flex justify-content-center gap-3">
-						<button className="btn btn-outline-success" onClick={startEncounter}>
-							Start Encounter
-						</button>
-						<button className="btn btn-outline-primary" onClick={nextCombatant}>
-							Next Combatant
-						</button>
-						<button className="btn btn-outline-danger" onClick={() => setCurrentCombatantIndex(-1)}>
-							Stop Encounter
-						</button>
-					</div>
+				<div className="col-md-6 d-flex justify-content-end gap-2">
+					<button className="btn btn-outline-secondary" onClick={saveEncounter}>
+						Save encounter
+					</button>
+					<label htmlFor="formFile" className="btn btn-outline-secondary">
+						Load encounter
+					</label>
+					<input className="d-none" type="file" id="formFile" onChange={loadEncounter} />
 				</div>
 			</div>
-		</>
+
+			{/* Add Combatants Section */}
+			<div className="row mb-3">
+				<div className="col-md-6">
+					<div className="input-group input-group-sm">
+						<input
+							type="text"
+							className="form-control"
+							placeholder="Add enemy"
+							list="monster-suggestions"
+							value={userInput}
+							onChange={(e) => setUserInput(e.target.value)}
+						/>
+						<datalist id="monster-suggestions">
+							{filteredMonsters.map((monster, index) => (
+								<option key={index} value={monster.name} />
+							))}
+						</datalist>
+						<button className="btn btn-outline-secondary" onClick={() => addMonster(userInput)}>
+							Add
+						</button>
+					</div>
+				</div>
+				<div className="col-md-6 d-flex justify-content-end gap-2">
+					<button className="btn btn-outline-secondary" onClick={() => addEmptyRow(false)}>
+						Add player
+					</button>
+					<button className="btn btn-outline-secondary" onClick={() => addEmptyRow(rollInitiative)}>
+						Add custom enemy
+					</button>
+				</div>
+			</div>
+
+			{/* Combatants Table */}
+			<div className="table-responsive">
+				<table className="table table-striped table-bordered">
+					<thead>
+						<tr>
+							<th>Initiative</th>
+							<th>Name</th>
+							<th>HP</th>
+							<th>AC</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						{combatants.length > 0 ? (
+							combatants.map((c, index) => (
+								<tr key={c.id} className={index === currentCombatantIndex ? "table-danger" : ""}>
+									<td>
+										<input type="text" className="form-control" value={c.initiative} onChange={(e) => updateInitiative(c.id, e.target.value)} />
+									</td>
+									<td>
+										<input type="text" className="form-control" value={c.name} onChange={(e) => updateName(c.id, e.target.value)} />
+									</td>
+									<td>
+										<input type="text" className="form-control" value={c.hp} onChange={(e) => updateHP(c.id, e.target.value)} />
+									</td>
+									<td>
+										<input type="text" className="form-control" value={c.ac} onChange={(e) => updateAC(c.id, e.target.value)} />
+									</td>
+									<td>
+										<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.id)}>
+											Kill
+										</button>
+									</td>
+								</tr>
+							))
+						) : (
+							<tr>
+								<td colSpan="5" className="text-center">
+									No combatants added
+								</td>
+							</tr>
+						)}
+					</tbody>
+				</table>
+			</div>
+
+			{/* Encounter Controls */}
+			<div className="bg-white py-2 border-top shadow-lg position-sticky bottom-0 w-100">
+				<div className="container d-flex justify-content-center gap-3">
+					<button className="btn btn-outline-success" onClick={startEncounter}>
+						Start Encounter
+					</button>
+					<button className="btn btn-outline-primary" onClick={nextCombatant}>
+						Next Combatant
+					</button>
+					<button className="btn btn-outline-danger" onClick={() => setCurrentCombatantIndex(-1)}>
+						Stop Encounter
+					</button>
+				</div>
+			</div>
+		</div>
 	);
 };
 
