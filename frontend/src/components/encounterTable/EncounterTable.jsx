@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { getMonster } from "../../dnd5eAPI";
 import { rollD20, rollDice } from "../../rollDice";
+import {Combatant} from "../../interfaces/Combatant"
 
 const EncounterTable = () => {
 	const [rollInitiative, setRollInitiative] = useState(false);
-	const [rollIHP, setRollHP] = useState(false);
+	const [rollHP, setRollHP] = useState(false);
 	const [combatants, setCombatants] = useState([]);
 	const [userInput, setUserInput] = useState("");
 	const [allMonsters, setAllMonsters] = useState([]);
@@ -49,10 +50,9 @@ const EncounterTable = () => {
 		}
 
 		const monster = await getMonster(requestedMonster.index);
-		console.log(monster);
 		const initiative = rollInitiative ? rollD20() : "";
 		const name = monster.name;
-		const hp = rollIHP ? rollDice(monster.hit_points_roll) : monster.hit_points;
+		const hp = rollHP ? rollDice(monster.hit_points_roll) : monster.hit_points;
 		const ac = monster.armor_class[0].value;
 		const id = crypto.randomUUID();
 
