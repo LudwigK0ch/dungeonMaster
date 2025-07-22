@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { getMonster } from "../../dnd5eAPI";
+import { getDefaultCombatant, getMonster } from "../../dnd5eAPI";
 import { rollD20, rollDice } from "../../rollDice";
-import {Combatant} from "../../interfaces/Combatant"
 
 const EncounterTable = () => {
 	const [rollInitiative, setRollInitiative] = useState(false);
@@ -42,6 +41,10 @@ const EncounterTable = () => {
 		}
 	}, [userInput, allMonsters]);
 
+	/**
+	 * Addition/removal of new combatants
+	 */
+
 	async function addMonster(monsterName) {
 		const requestedMonster = allMonsters.find((monster) => monster.name == monsterName);
 		if (!requestedMonster) {
@@ -50,53 +53,16 @@ const EncounterTable = () => {
 		}
 
 		const monster = await getMonster(requestedMonster.index);
-		const initiative = rollInitiative ? rollD20() : "";
-		const name = monster.name;
-		const hp = rollHP ? rollDice(monster.hit_points_roll) : monster.hit_points;
-		const ac = monster.armor_class[0].value;
-		const id = crypto.randomUUID();
+		monster.hit_points = rollHP ? rollDice(monster.hit_points_roll) : monster.hit_points;
+		monster.initiative = rollInitiative ? rollD20() : "";
 
-		setCombatants([
-			...combatants,
-			{
-				initiative: initiative,
-				name: name,
-				hp: hp,
-				ac: ac,
-				id: id
-			}
-		]);
+		setCombatants([...combatants, monster]);
 	}
 
-	// Function to update combatant values (HP or Initiative)
-	const updateInitiative = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, initiative: Number(value) || c.initiative } : c)));
-	};
-
-	// Function to update combatant values (HP or Initiative)
-	const updateHP = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, hp: Number(value) || c.hp } : c)));
-	};
-
-	const updateName = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, name: value } : c)));
-	};
-
-	const updateAC = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, ac: Number(value) || c.ac } : c)));
-	};
-
-	const addEmptyRow = (rollInitiative) => {
-		setCombatants([
-			...combatants,
-			{
-				initiative: rollInitiative ? rollD20() : "",
-				name: "",
-				hp: "",
-				ac: "",
-				id: crypto.randomUUID()
-			}
-		]);
+	const addDefaultCombatant = (rollInitiative) => {
+		const defaultCombatant = getDefaultCombatant();
+		defaultCombatant.initiative = rollInitiative ? rollD20() : "";
+		setCombatants([...combatants, defaultCombatant]);
 	};
 
 	const removeCombatant = (id) => {
@@ -121,6 +87,40 @@ const EncounterTable = () => {
 		});
 	};
 
+	/**
+	 * Table record functions
+	 */
+
+	// Function to update combatant initiative
+	const updateInitiative = (id, value) => {
+		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, initiative: value === "" ? value : Number(value) || c.initiative } : c)));
+	};
+
+	// Function to update combatant HP
+	const updateHP = (id, value) => {
+		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, hit_points: value === "" ? value : Number(value) || c.hit_points } : c)));
+	};
+
+	const updateName = (id, value) => {
+		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, name: value } : c)));
+	};
+
+	const updateAC = (id, value) => {
+		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, armor_class: value === "" ? value : Number(value) || c.armor_class } : c)));
+	};
+
+	const showDetails = (id) => {
+		const combatant = combatants.find((c) => {
+			return c.id === id;
+		});
+
+		console.log(combatant);
+	};
+
+	/**
+	 * Encounter buttons
+	 */
+	const encounterButtons = {};
 	const startEncounter = () => {
 		setCombatants((prevCombatants) => [...prevCombatants].sort((a, b) => b.initiative - a.initiative));
 		setCurrentCombatantIndex(0);
@@ -215,10 +215,10 @@ const EncounterTable = () => {
 					</div>
 				</div>
 				<div className="col-md-6 d-flex justify-content-end gap-2">
-					<button className="btn btn-outline-secondary" onClick={() => addEmptyRow(false)}>
+					<button className="btn btn-outline-secondary" onClick={() => addDefaultCombatant(false)}>
 						Add player
 					</button>
-					<button className="btn btn-outline-secondary" onClick={() => addEmptyRow(rollInitiative)}>
+					<button className="btn btn-outline-secondary" onClick={() => addDefaultCombatant(rollInitiative)}>
 						Add custom enemy
 					</button>
 				</div>
@@ -247,15 +247,20 @@ const EncounterTable = () => {
 										<input type="text" className="form-control" value={c.name} onChange={(e) => updateName(c.id, e.target.value)} />
 									</td>
 									<td>
-										<input type="text" className="form-control" value={c.hp} onChange={(e) => updateHP(c.id, e.target.value)} />
+										<input type="text" className="form-control" value={c.hit_points} onChange={(e) => updateHP(c.id, e.target.value)} />
 									</td>
 									<td>
-										<input type="text" className="form-control" value={c.ac} onChange={(e) => updateAC(c.id, e.target.value)} />
+										<input type="text" className="form-control" value={c.armor_class} onChange={(e) => updateAC(c.id, e.target.value)} />
 									</td>
 									<td>
-										<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.id)}>
-											Kill
-										</button>
+										<div className="d-flex">
+											<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.id)}>
+												Kill
+											</button>
+											<button className="btn btn-outline-warning btn-sm" onClick={() => showDetails(c.id)}>
+												Details
+											</button>
+										</div>
 									</td>
 								</tr>
 							))
