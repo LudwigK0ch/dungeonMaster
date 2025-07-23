@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { rollD20, rollDice } from "../../rollDice";
 import { Combatant } from "../encounterTable/Combatant";
+import "./CombatantPopup.css";
 
 const EncounterTable = () => {
 	const [combatants, setCombatants] = useState([]);
@@ -8,6 +9,8 @@ const EncounterTable = () => {
 	const [allMonsters, setAllMonsters] = useState([]);
 	const [filteredMonsters, setFilteredMonsters] = useState([]);
 	const [currentCombatantIndex, setCurrentCombatantIndex] = useState(-1);
+	const [selectedCombatant, setSelectedCombatant] = useState(null);
+	const [showPopup, setShowPopup] = useState(false);
 
 	// Fetch all monsters when the component mounts
 	useEffect(() => {
@@ -98,7 +101,29 @@ const EncounterTable = () => {
 			default:
 				break;
 		}
-		setCombatants((combatants) => combatants.map((c) => (c.encounter_id === encounter_id ? { ...c, [field]: newValue } : c)));
+		setCombatants((combatants) =>
+			combatants.map((c) => {
+				if (c.encounter_id === encounter_id) {
+					const updated = Object.assign(new Combatant(), c);
+					updated[field] = newValue;
+					return updated;
+				}
+				return c;
+			})
+		);
+	};
+
+	const showCombatantDetails = (encounterId) => {
+		const combatant = combatants.find((c) => c.encounter_id === encounterId);
+		if (combatant) {
+			setSelectedCombatant(combatant);
+			setShowPopup(true);
+		}
+	};
+
+	const closePopup = () => {
+		setShowPopup(false);
+		setSelectedCombatant(null);
 	};
 
 	/**
@@ -135,7 +160,8 @@ const EncounterTable = () => {
 			try {
 				const loadedCombatants = JSON.parse(e.target.result);
 				if (Array.isArray(loadedCombatants)) {
-					setCombatants(loadedCombatants); // Update state
+					const hydrated = loadedCombatants.map((c) => Object.assign(new Combatant(), c));
+					setCombatants(hydrated); // <- Now with class methods restored
 				} else {
 					alert("Invalid JSON format!");
 				}
@@ -162,7 +188,7 @@ const EncounterTable = () => {
 						/>
 						<datalist id="monster-suggestions">
 							{filteredMonsters.map((monster, index) => (
-								<option key={index} value={monster.name} />
+								<option key={monster.index} value={monster.name} />
 							))}
 						</datalist>
 						<button className="btn btn-outline-secondary" onClick={() => addCombatant(userInput)}>
@@ -182,6 +208,16 @@ const EncounterTable = () => {
 				</div>
 			</div>
 
+			{showPopup && selectedCombatant && (
+				<div className="popup-overlay" onClick={closePopup}>
+					<div className="popup-content" onClick={(e) => e.stopPropagation()}>
+						<button className="close-btn" onClick={closePopup}>
+							×
+						</button>
+						{selectedCombatant.getCombatantCard()}
+					</div>
+				</div>
+			)}
 			{/* Combatants Table */}
 			<div className="table-responsive">
 				<table className="table table-striped table-bordered">
@@ -234,6 +270,9 @@ const EncounterTable = () => {
 										<div className="d-flex">
 											<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.encounter_id)}>
 												Kill
+											</button>
+											<button className="btn btn-outline-warning btn-sm" onClick={() => showCombatantDetails(c.encounter_id)}>
+												Details
 											</button>
 										</div>
 									</td>
