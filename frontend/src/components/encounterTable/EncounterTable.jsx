@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { getDefaultCombatant, getMonster } from "../../dnd5eAPI";
 import { rollD20, rollDice } from "../../rollDice";
+import { Combatant } from "../encounterTable/Combatant";
 
 const EncounterTable = () => {
-	const [rollInitiative, setRollInitiative] = useState(false);
-	const [rollHP, setRollHP] = useState(false);
 	const [combatants, setCombatants] = useState([]);
 	const [userInput, setUserInput] = useState("");
 	const [allMonsters, setAllMonsters] = useState([]);
@@ -42,33 +40,32 @@ const EncounterTable = () => {
 	}, [userInput, allMonsters]);
 
 	/**
-	 * Addition/removal of new combatants
+	 * Addition/removal/update of new combatants
 	 */
 
-	async function addMonster(monsterName) {
-		const requestedMonster = allMonsters.find((monster) => monster.name == monsterName);
-		if (!requestedMonster) {
-			console.log(`Monster with name ${monsterName} can not be found`);
-			return;
+	async function addCombatant(combatantName) {
+		const requestedCombatant = allMonsters.find((monster) => monster.name == combatantName);
+		let index;
+		if (requestedCombatant) {
+			index = requestedCombatant.index;
+		} else {
+			console.log(`Monster with name ${combatantName} can not be found. Adding default combatant.`);
 		}
 
-		const monster = await getMonster(requestedMonster.index);
-		monster.hit_points = rollHP ? rollDice(monster.hit_points_roll) : monster.hit_points;
-		monster.initiative = rollInitiative ? rollD20() : "";
+		const combatant = await Combatant.create(index);
 
-		setCombatants([...combatants, monster]);
+		combatant.encounter_initiative = rollD20();
+		combatant.encounter_name = combatant.name ? combatant.name : combatantName;
+		combatant.encounter_hit_points = combatant.hit_points_roll ? rollDice(combatant.hit_points_roll) : 0;
+		combatant.encounter_armor_class = combatant.armor_class.length > 0 ? combatant.armor_class[0].value : 0;
+
+		setCombatants([...combatants, combatant]);
 	}
-
-	const addDefaultCombatant = (rollInitiative) => {
-		const defaultCombatant = getDefaultCombatant();
-		defaultCombatant.initiative = rollInitiative ? rollD20() : "";
-		setCombatants([...combatants, defaultCombatant]);
-	};
 
 	const removeCombatant = (id) => {
 		setCombatants((prevCombatants) => {
-			const index = prevCombatants.findIndex((c) => c.id === id);
-			const newCombatants = prevCombatants.filter((c) => c.id !== id);
+			const index = prevCombatants.findIndex((c) => c.encounter_id === id);
+			const newCombatants = prevCombatants.filter((c) => c.encounter_id !== id);
 
 			// If the list is empty after removal, reset index
 			if (newCombatants.length === 0) {
@@ -87,42 +84,28 @@ const EncounterTable = () => {
 		});
 	};
 
-	/**
-	 * Table record functions
-	 */
+	const updateCombatantValue = (encounter_id, field, newValue) => {
+		// Do field validations
+		switch (field) {
+			case "encounter_initiative":
+			case "encounter_hit_points":
+			case "encounter_armor_class": {
+				if (newValue !== "" && isNaN(newValue)) {
+					return;
+				}
+			}
 
-	// Function to update combatant initiative
-	const updateInitiative = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, initiative: value === "" ? value : Number(value) || c.initiative } : c)));
-	};
-
-	// Function to update combatant HP
-	const updateHP = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, hit_points: value === "" ? value : Number(value) || c.hit_points } : c)));
-	};
-
-	const updateName = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, name: value } : c)));
-	};
-
-	const updateAC = (id, value) => {
-		setCombatants((combatants) => combatants.map((c) => (c.id === id ? { ...c, armor_class: value === "" ? value : Number(value) || c.armor_class } : c)));
-	};
-
-	const showDetails = (id) => {
-		const combatant = combatants.find((c) => {
-			return c.id === id;
-		});
-
-		console.log(combatant);
+			default:
+				break;
+		}
+		setCombatants((combatants) => combatants.map((c) => (c.encounter_id === encounter_id ? { ...c, [field]: newValue } : c)));
 	};
 
 	/**
 	 * Encounter buttons
 	 */
-	const encounterButtons = {};
 	const startEncounter = () => {
-		setCombatants((prevCombatants) => [...prevCombatants].sort((a, b) => b.initiative - a.initiative));
+		setCombatants((prevCombatants) => [...prevCombatants].sort((a, b) => b.encounter_initiative - a.encounter_initiative));
 		setCurrentCombatantIndex(0);
 	};
 
@@ -167,39 +150,12 @@ const EncounterTable = () => {
 		<div className="container py-3">
 			{/* Controls Section */}
 			<div className="row mb-3">
-				<div className="col-md-6 d-flex gap-3">
-					<div className="form-check">
-						<input className="form-check-input" type="checkbox" id="rollInitiative" onChange={() => setRollInitiative(!rollInitiative)} />
-						<label className="form-check-label" htmlFor="rollInitiative">
-							Roll initiative
-						</label>
-					</div>
-					<div className="form-check">
-						<input className="form-check-input" type="checkbox" id="rollHP" onChange={() => setRollHP(!rollHP)} />
-						<label className="form-check-label" htmlFor="rollHP">
-							Roll HP
-						</label>
-					</div>
-				</div>
-				<div className="col-md-6 d-flex justify-content-end gap-2">
-					<button className="btn btn-outline-secondary" onClick={saveEncounter}>
-						Save encounter
-					</button>
-					<label htmlFor="formFile" className="btn btn-outline-secondary">
-						Load encounter
-					</label>
-					<input className="d-none" type="file" id="formFile" onChange={loadEncounter} />
-				</div>
-			</div>
-
-			{/* Add Combatants Section */}
-			<div className="row mb-3">
 				<div className="col-md-6">
 					<div className="input-group input-group-sm">
 						<input
 							type="text"
 							className="form-control"
-							placeholder="Add enemy"
+							placeholder="Add combatant"
 							list="monster-suggestions"
 							value={userInput}
 							onChange={(e) => setUserInput(e.target.value)}
@@ -209,18 +165,20 @@ const EncounterTable = () => {
 								<option key={index} value={monster.name} />
 							))}
 						</datalist>
-						<button className="btn btn-outline-secondary" onClick={() => addMonster(userInput)}>
+						<button className="btn btn-outline-secondary" onClick={() => addCombatant(userInput)}>
 							Add
 						</button>
 					</div>
 				</div>
+
 				<div className="col-md-6 d-flex justify-content-end gap-2">
-					<button className="btn btn-outline-secondary" onClick={() => addDefaultCombatant(false)}>
-						Add player
+					<button className="btn btn-outline-secondary" onClick={saveEncounter}>
+						Save encounter
 					</button>
-					<button className="btn btn-outline-secondary" onClick={() => addDefaultCombatant(rollInitiative)}>
-						Add custom enemy
-					</button>
+					<label htmlFor="formFile" className="btn btn-outline-secondary">
+						Load encounter
+					</label>
+					<input className="d-none" type="file" id="formFile" onChange={loadEncounter} />
 				</div>
 			</div>
 
@@ -239,26 +197,43 @@ const EncounterTable = () => {
 					<tbody>
 						{combatants.length > 0 ? (
 							combatants.map((c, index) => (
-								<tr key={c.id} className={index === currentCombatantIndex ? "table-danger" : ""}>
+								<tr key={c.encounter_id} className={index === currentCombatantIndex ? "table-danger" : ""}>
 									<td>
-										<input type="text" className="form-control" value={c.initiative} onChange={(e) => updateInitiative(c.id, e.target.value)} />
+										<input
+											type="text"
+											className="form-control"
+											value={c.encounter_initiative}
+											onChange={(e) => updateCombatantValue(c.encounter_id, "encounter_initiative", e.target.value)}
+										/>
 									</td>
 									<td>
-										<input type="text" className="form-control" value={c.name} onChange={(e) => updateName(c.id, e.target.value)} />
+										<input
+											type="text"
+											className="form-control"
+											value={c.encounter_name}
+											onChange={(e) => updateCombatantValue(c.encounter_id, "encounter_name", e.target.value)}
+										/>
 									</td>
 									<td>
-										<input type="text" className="form-control" value={c.hit_points} onChange={(e) => updateHP(c.id, e.target.value)} />
+										<input
+											type="text"
+											className="form-control"
+											value={c.encounter_hit_points}
+											onChange={(e) => updateCombatantValue(c.encounter_id, "encounter_hit_points", e.target.value)}
+										/>
 									</td>
 									<td>
-										<input type="text" className="form-control" value={c.armor_class} onChange={(e) => updateAC(c.id, e.target.value)} />
+										<input
+											type="text"
+											className="form-control"
+											value={c.encounter_armor_class}
+											onChange={(e) => updateCombatantValue(c.encounter_id, "encounter_armor_class", e.target.value)}
+										/>
 									</td>
 									<td>
 										<div className="d-flex">
-											<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.id)}>
+											<button className="btn btn-outline-danger btn-sm" onClick={() => removeCombatant(c.encounter_id)}>
 												Kill
-											</button>
-											<button className="btn btn-outline-warning btn-sm" onClick={() => showDetails(c.id)}>
-												Details
 											</button>
 										</div>
 									</td>
